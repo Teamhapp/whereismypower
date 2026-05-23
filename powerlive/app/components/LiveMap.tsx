@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { STATUS_COLOR, type Area } from '@/app/data/areas'
 import { SCHEDULED_OUTAGES, getScheduledStatus, formatTimeRange, type ScheduledOutage } from '@/app/data/scheduled'
@@ -22,6 +22,8 @@ const SCHEDULED_COLOR: Record<string, string> = {
 export default function LiveMap({ areas, selectedId, selectedScheduledId, onAreaClick, onScheduledClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<L.Map | null>(null)
+  const tileLayerRef = useRef<L.TileLayer | null>(null)
+  const [mapStyle, setMapStyle] = useState<'dark' | 'satellite' | 'light'>('dark')
 
   // Init map once
   useEffect(() => {
@@ -33,18 +35,65 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
       zoomControl: false,
     })
 
-    // Dark CartoDB tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
-    }).addTo(map)
-
     L.control.zoom({ position: 'bottomright' }).addTo(map)
     mapRef.current = map
 
     return () => { map.remove(); mapRef.current = null }
   }, [])
+
+  // Swap Tile Layers Dynamically
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current)
+    }
+
+    let url = ''
+    let attr = ''
+    if (mapStyle === 'dark') {
+      url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+    } else if (mapStyle === 'light') {
+      url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+    } else {
+      url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      attr = 'Tiles &copy; Esri &mdash; Source: Esri, USDA, USGS, and the GIS User Community'
+    }
+
+    const tileLayer = L.tileLayer(url, {
+      attribution: attr,
+      maxZoom: 20,
+    }).addTo(map)
+
+    tileLayerRef.current = tileLayer
+  }, [mapStyle])
+
+  // Camera Fly-To transitions on selection changes
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (selectedId) {
+      const selectedArea = areas.find(a => a.id === selectedId)
+      if (selectedArea) {
+        map.flyTo([selectedArea.lat, selectedArea.lng], 13.5, {
+          duration: 1.2,
+          easeLinearity: 0.25
+        })
+      }
+    } else if (selectedScheduledId) {
+      const selectedScheduled = SCHEDULED_OUTAGES.find(s => s.id === selectedScheduledId)
+      if (selectedScheduled) {
+        map.flyTo([selectedScheduled.lat, selectedScheduled.lng], 13.5, {
+          duration: 1.2,
+          easeLinearity: 0.25
+        })
+      }
+    }
+  }, [selectedId, selectedScheduledId, areas])
 
   // Community area polygons + count badges
   useEffect(() => {
@@ -79,7 +128,7 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
           box-shadow:${isSelected ? `0 0 0 5px ${color}33,` : ''}0 2px 14px ${color}55;
           cursor:pointer;backdrop-filter:blur(6px);
         ">${area.reportCount}</div>`,
-        className: '',
+        className: 'map-pulse-' + area.status,
         iconSize: [size, size],
         iconAnchor: [r, r],
       })
@@ -137,7 +186,7 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
           padding:2px 7px;border-radius:6px;white-space:nowrap;
           box-shadow:0 1px 6px rgba(0,0,0,.5);
         ">${item.areaName}</div>`,
-        className: '',
+        className: status === 'active' ? 'map-pulse-planned' : '',
         iconSize: [44, 44],
         iconAnchor: [10, 44],
       })
@@ -154,5 +203,31 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
     return () => layers.forEach(l => map.removeLayer(l))
   }, [selectedScheduledId, onScheduledClick])
 
-  return <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
+  return (
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
+
+      {/* Floating Premium Map Style Switcher */}
+      <div className="map-style-switcher">
+        <button
+          className={`style-btn ${mapStyle === 'dark' ? 'active' : ''}`}
+          onClick={() => setMapStyle('dark')}
+        >
+          🕶️ Dark
+        </button>
+        <button
+          className={`style-btn ${mapStyle === 'satellite' ? 'active' : ''}`}
+          onClick={() => setMapStyle('satellite')}
+        >
+          🛰️ Satellite
+        </button>
+        <button
+          className={`style-btn ${mapStyle === 'light' ? 'active' : ''}`}
+          onClick={() => setMapStyle('light')}
+        >
+          ☀️ Light
+        </button>
+      </div>
+    </div>
+  )
 }

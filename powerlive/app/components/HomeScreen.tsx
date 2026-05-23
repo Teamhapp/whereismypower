@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { AREAS, STATUS_COLOR, STATUS_LABEL, STATUS_ICON, type Area } from '@/app/data/areas'
 import { SCHEDULED_OUTAGES, getScheduledStatus, formatTimeRange, type ScheduledOutage } from '@/app/data/scheduled'
 import ZoneStatsPanel from '@/app/components/ZoneStatsPanel'
@@ -14,15 +14,35 @@ interface Props {
   onReport: () => void
 }
 
-const outageCount    = AREAS.filter(a => a.status === 'outage').length
-const activeScheduled = SCHEDULED_OUTAGES.filter(s => getScheduledStatus(s) === 'active').length
-const upcomingScheduled = SCHEDULED_OUTAGES.filter(s => getScheduledStatus(s) !== 'completed')
-
 export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }: Props) {
+  const [areas, setAreas] = useState<Area[]>(AREAS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedScheduledId, setSelectedScheduledId] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
   const [showZones, setShowZones] = useState(false)
+
+  const fetchReports = useCallback(async () => {
+    try {
+      const res = await fetch('/api/reports')
+      if (res.ok) {
+        const data = await res.json()
+        setAreas(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch real-time reports', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchReports()
+    // Poll every 10 seconds for ultra-responsive updates
+    const timer = setInterval(fetchReports, 10000)
+    return () => clearInterval(timer)
+  }, [fetchReports])
+
+  const outageCount = areas.filter(a => a.status === 'outage').length
+  const activeScheduled = SCHEDULED_OUTAGES.filter(s => getScheduledStatus(s) === 'active').length
+  const upcomingScheduled = SCHEDULED_OUTAGES.filter(s => getScheduledStatus(s) !== 'completed')
 
   const handleAreaClick = useCallback((area: Area) => {
     setSelectedId(area.id)
@@ -36,7 +56,7 @@ export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }
     onScheduledSelect(item)
   }, [onScheduledSelect])
 
-  const filteredAreas = AREAS.filter(a => filter === 'all' || a.status === filter)
+  const filteredAreas = areas.filter(a => filter === 'all' || a.status === filter)
 
   return (
     <div style={{ position: 'relative', height: '100%', background: 'var(--bg)' }}>
@@ -44,6 +64,7 @@ export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }
       {/* Map fills screen */}
       <div style={{ position: 'absolute', inset: 0, bottom: 200 }}>
         <LiveMap
+          areas={areas}
           selectedId={selectedId}
           selectedScheduledId={selectedScheduledId}
           onAreaClick={handleAreaClick}

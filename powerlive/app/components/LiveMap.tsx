@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
-import { AREAS, STATUS_COLOR, type Area } from '@/app/data/areas'
+import { STATUS_COLOR, type Area } from '@/app/data/areas'
 import { SCHEDULED_OUTAGES, getScheduledStatus, formatTimeRange, type ScheduledOutage } from '@/app/data/scheduled'
 
 interface Props {
+  areas: Area[]
   selectedId: string | null
   selectedScheduledId: string | null
   onAreaClick: (area: Area) => void
@@ -18,7 +19,7 @@ const SCHEDULED_COLOR: Record<string, string> = {
   completed: '#94a3b8',
 }
 
-export default function LiveMap({ selectedId, selectedScheduledId, onAreaClick, onScheduledClick }: Props) {
+export default function LiveMap({ areas, selectedId, selectedScheduledId, onAreaClick, onScheduledClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<L.Map | null>(null)
 
@@ -51,7 +52,7 @@ export default function LiveMap({ selectedId, selectedScheduledId, onAreaClick, 
     if (!map) return
     const layers: L.Layer[] = []
 
-    AREAS.forEach(area => {
+    areas.forEach(area => {
       const color = STATUS_COLOR[area.status]
       const isSelected = area.id === selectedId
 
@@ -91,7 +92,7 @@ export default function LiveMap({ selectedId, selectedScheduledId, onAreaClick, 
     })
 
     return () => layers.forEach(l => map.removeLayer(l))
-  }, [selectedId, onAreaClick])
+  }, [areas, selectedId, onAreaClick])
 
   // Scheduled outage markers — diamond badge
   useEffect(() => {

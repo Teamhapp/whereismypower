@@ -77,7 +77,23 @@ export async function POST(req: NextRequest) {
     }
 
     let nearbyCount = 0
+    let nearestInfra: { name: string; type: string; distance_meters: number } | null = null
+
     if (lat && lng) {
+      // 1. KNN Spatial Query to locate nearest TNEB Substation/Transformer
+      try {
+        const { data: infra } = await supabase.rpc('get_nearest_infrastructure', {
+          user_lat: lat,
+          user_lng: lng,
+        })
+        if (infra && (infra as any[]).length > 0) {
+          nearestInfra = (infra as any[])[0]
+        }
+      } catch {
+        // Fallback for offline/mock database environment
+      }
+
+      // 2. Query nearby reports for DBSCAN/radial weight calculation
       const { data: nearby } = await supabase.rpc('get_nearby_reports', {
         user_lat: lat,
         user_lng: lng,
@@ -105,8 +121,8 @@ export async function POST(req: NextRequest) {
 
     // Resolve TNEB zone/circle from locality
     const tnebLookup = geo.locality ? getDivisionByLocality(geo.locality) : undefined
-    const tnebZoneId   = tnebLookup?.zone.id   ?? null
-    const tnebCircleId = tnebLookup?.circle.id ?? null
+    const tnebZoneId   = nearestInfra?.type === 'substation' ? nearestInfra.name : (tnebLookup?.zone.id ?? null)
+    const tnebCircleId = nearestInfra?.type === 'transformer' ? nearestInfra.name : (tnebLookup?.circle.id ?? null)
 
     const { data: report, error } = await supabase
       .from('outage_reports')
@@ -126,6 +142,7 @@ export async function POST(req: NextRequest) {
         raw_text: payload.raw_text,
         tneb_zone_id:   tnebZoneId,
         tneb_circle_id: tnebCircleId,
+        geom: lat && lng ? `SRID=4326;POINT(${lng} ${lat})` : null, // PostGIS spatial geom
         expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
       })
       .select()
@@ -133,7 +150,15 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ success: true, report_id: report.id, confidence, source, geo, tneb: { zone: tnebZoneId, circle: tnebCircleId } })
+    return NextResponse.json({
+      success: true,
+      report_id: report.id,
+      confidence,
+      source,
+      geo,
+      tneb: { zone: tnebZoneId, circle: tnebCircleId },
+      infra: nearestInfra
+    })
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'unknown error'

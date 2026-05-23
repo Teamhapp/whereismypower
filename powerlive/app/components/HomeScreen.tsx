@@ -122,27 +122,36 @@ export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }
         </div>
 
         {/* Filter chips */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
           {[
-            { id: 'all', label: 'All' },
-            { id: 'outage', label: '🔴 Outage' },
-            { id: 'restored', label: '🟢 Restored' },
-            { id: 'unstable', label: '🟡 Voltage' },
-            { id: 'planned', label: '🟣 Planned' },
-            { id: 'rain', label: '🔵 Rain' },
+            { id: 'all', label: 'All', dot: '' },
+            { id: 'outage', label: 'Outage', dot: '#ef4444' },
+            { id: 'restored', label: 'Restored', dot: '#22c55e' },
+            { id: 'unstable', label: 'Voltage Issue', dot: '#f59e0b' },
+            { id: 'planned', label: 'Planned', dot: '#8b5cf6' },
+            { id: 'rain', label: 'Rain Impact', dot: '#3b82f6' },
           ].map(f => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
               style={{
-                flexShrink: 0, padding: '6px 14px', borderRadius: 20, border: 'none',
+                flexShrink: 0, padding: '7px 14px', borderRadius: 20,
+                border: filter === f.id ? 'none' : '1px solid rgba(255,255,255,0.06)',
                 cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                background: filter === f.id ? 'var(--primary)' : 'rgba(255,255,255,.08)',
+                background: filter === f.id ? 'var(--primary)' : 'rgba(255,255,255,.05)',
                 color: filter === f.id ? '#000' : 'var(--text2)',
+                display: 'flex', alignItems: 'center', gap: 6,
                 backdropFilter: 'blur(8px)',
                 transition: 'all .15s',
               }}
             >
+              {f.dot && (
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: f.dot, display: 'inline-block',
+                  boxShadow: `0 0 5px ${f.dot}`,
+                }} />
+              )}
               {f.label}
             </button>
           ))}
@@ -150,7 +159,7 @@ export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }
           <button
             onClick={() => setShowZones(true)}
             style={{
-              flexShrink: 0, padding: '6px 14px', borderRadius: 20,
+              flexShrink: 0, padding: '7px 14px', borderRadius: 20,
               border: '1px solid rgba(245,158,11,.35)',
               cursor: 'pointer', fontSize: 12, fontWeight: 600,
               background: 'rgba(245,158,11,.1)', color: 'var(--primary)',

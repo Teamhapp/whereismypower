@@ -19,6 +19,52 @@ const SCHEDULED_COLOR: Record<string, string> = {
   completed: '#94a3b8',
 }
 
+// Crisp Vector SVGs for premium custom markers matching the screenshot
+const getStatusSVG = (status: string) => {
+  switch (status) {
+    case 'outage':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9v8l10-12h-9z"/></svg>`
+    case 'restored':
+      return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    case 'unstable':
+      return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`
+    case 'planned':
+      return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
+    case 'rain':
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8" y2="22"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="16" y1="16" x2="16" y2="22"/></svg>`
+    default:
+      return ''
+  }
+}
+
+const getStatusLabelText = (status: string) => {
+  switch (status) {
+    case 'outage':
+      return 'Major Outage'
+    case 'restored':
+      return 'Power Restored'
+    case 'unstable':
+      return 'Voltage Issue'
+    case 'planned':
+      return 'Planned Shutdown'
+    case 'rain':
+      return 'Rain Impact'
+    default:
+      return ''
+  }
+}
+
+const getStatusLabelColor = (status: string) => {
+  switch (status) {
+    case 'restored': return '#4ade80'
+    case 'outage': return '#fc8181'
+    case 'unstable': return '#fbbf24'
+    case 'planned': return '#a78bfa'
+    case 'rain': return '#60a5fa'
+    default: return '#94a3b8'
+  }
+}
+
 export default function LiveMap({ areas, selectedId, selectedScheduledId, onAreaClick, onScheduledClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<L.Map | null>(null)
@@ -30,8 +76,8 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
     if (!containerRef.current || mapRef.current) return
 
     const map = L.map(containerRef.current, {
-      center: [13.0, 80.18],
-      zoom: 11,
+      center: [13.05, 80.22], // Centered precisely over Chennai to capture all updated screenshot zones
+      zoom: 12,               // Zoom Level 12 for perfect layout framing
       zoomControl: false,
     })
 
@@ -145,26 +191,56 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
 
       layers.push(poly)
 
-      // Count badge in centre of area
-      const r = Math.max(26, Math.min(48, 18 + area.reportCount / 2))
-      const size = r * 2
+      // Advanced Floating Custom Badge Marker rendering directly in divIcon
       const icon = L.divIcon({
-        html: `<div style="
-          width:${size}px;height:${size}px;border-radius:50%;
-          background:${color}22;border:2px solid ${color};
-          display:flex;align-items:center;justify-content:center;
-          font-size:${Math.max(11, Math.round(r * 0.5))}px;font-weight:700;color:${color};
-          box-shadow:${isSelected ? `0 0 0 5px ${color}33,` : ''}0 2px 14px ${color}55;
-          cursor:pointer;backdrop-filter:blur(6px);
-        ">${area.reportCount}</div>`,
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; width: 120px;">
+            <!-- Icon Circle -->
+            <div style="
+              width: 32px; height: 32px; border-radius: 50%;
+              background: ${color}; border: 2.2px solid #ffffff;
+              display: flex; align-items: center; justify-content: center;
+              color: #ffffff;
+              box-shadow: 0 4px 12px ${color}88, ${isSelected ? `0 0 0 5px ${color}33` : ''};
+              cursor: pointer; position: relative; z-index: 2;
+            ">
+              ${getStatusSVG(area.status)}
+            </div>
+            
+            <!-- Outage reports count sub-pill (only for active outages) -->
+            ${area.status === 'outage' ? `
+              <div style="
+                background: ${color}; color: #ffffff; font-size: 8px; font-weight: 800;
+                padding: 1px 5px; border-radius: 20px; border: 1.2px solid #ffffff;
+                margin-top: -6px; z-index: 3; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                white-space: nowrap;
+              ">
+                ${area.reportCount}
+              </div>
+            ` : ''}
+
+            <!-- Premium glassmorphic text label bubble underneath -->
+            <div style="
+              background: rgba(13, 13, 20, 0.88); border: 1.2px solid rgba(255, 255, 255, 0.08);
+              border-radius: 8px; padding: 4px 8px; margin-top: 5px;
+              display: flex; flex-direction: column; align-items: center;
+              box-shadow: 0 4px 14px rgba(0,0,0,0.6); pointer-events: none;
+              white-space: nowrap; backdrop-filter: blur(8px);
+            ">
+              <span style="font-size: 11px; font-weight: 700; color: #ffffff; line-height: 1.2;">${area.name}</span>
+              <span style="font-size: 9px; font-weight: 600; color: ${getStatusLabelColor(area.status)}; line-height: 1.2; margin-top: 1px;">
+                ${getStatusLabelText(area.status)}
+              </span>
+            </div>
+          </div>
+        `,
         className: 'map-pulse-' + area.status,
-        iconSize: [size, size],
-        iconAnchor: [r, r],
+        iconSize: [120, 75],
+        iconAnchor: [60, 16], // Accurately pins the top-circle center to the geographic coordinate
       })
 
       const marker = L.marker([area.lat, area.lng], { icon })
         .addTo(map)
-        .bindTooltip(`<b>${area.name}</b> · ${area.reportCount} reports`, { direction: 'top', offset: [0, -(r + 4)] })
         .on('click', () => onAreaClick(area))
       layers.push(marker)
     })

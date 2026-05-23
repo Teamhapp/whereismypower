@@ -105,15 +105,44 @@ export default function LiveMap({ areas, selectedId, selectedScheduledId, onArea
       const color = STATUS_COLOR[area.status]
       const isSelected = area.id === selectedId
 
-      // Filled polygon zone
+      // Filled polygon zone (subtle default fill to avoid dense overlapping stacks)
       const poly = L.polygon(area.polygon as L.LatLngExpression[], {
         color,
-        weight: isSelected ? 2.5 : 1.5,
-        opacity: isSelected ? 0.95 : 0.7,
+        weight: isSelected ? 3 : 1.2,
+        opacity: isSelected ? 0.95 : 0.35,
         fillColor: color,
-        fillOpacity: isSelected ? 0.28 : 0.15,
+        fillOpacity: isSelected ? 0.24 : 0.03,
         interactive: true,
-      }).addTo(map).on('click', () => onAreaClick(area))
+      }).addTo(map)
+
+      if (isSelected) {
+        poly.bringToFront()
+      }
+
+      poly.on('click', () => onAreaClick(area))
+
+      // Bring hovered zones dynamically to front
+      poly.on('mouseover', (e) => {
+        const layer = e.target as L.Polygon
+        layer.setStyle({
+          weight: 3.5,
+          opacity: 0.95,
+          fillOpacity: 0.26,
+        })
+        layer.bringToFront()
+      })
+
+      poly.on('mouseout', (e) => {
+        const layer = e.target as L.Polygon
+        if (!isSelected) {
+          layer.setStyle({
+            weight: 1.2,
+            opacity: 0.35,
+            fillOpacity: 0.03,
+          })
+        }
+      })
+
       layers.push(poly)
 
       // Count badge in centre of area

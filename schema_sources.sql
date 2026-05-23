@@ -220,3 +220,64 @@ end;
 $$;
 
 grant execute on function get_nearest_infrastructure(double precision, double precision) to anon, authenticated;
+
+-- ─────────────────────────────────────────────
+-- USER REPUTATION ENGINE
+-- Tracks trustworthiness (0-100 points) of contributors
+-- ─────────────────────────────────────────────
+create table if not exists user_reputation (
+  session_id       text primary key,
+  trust_points     integer not null default 50 check (trust_points between 0 and 100),
+  verified_reports integer not null default 0,
+  false_reports    integer not null default 0,
+  updated_at       timestamptz default now()
+);
+
+-- Historical reports view
+create or replace view report_history as
+select
+  id,
+  status,
+  locality,
+  ward as street,
+  district,
+  confidence,
+  source,
+  reported_at,
+  reason,
+  session_id,
+  is_active
+from outage_reports;
+
+-- Function to adjust user reputation points
+create or replace function adjust_user_reputation(
+  sess_id text,
+  delta integer
+)
+returns integer language plpgsql as $$
+declare
+  curr_points integer;
+begin
+  insert into user_reputation (session_id, trust_points)
+  values (sess_id, 50)
+  on conflict (session_id) do nothing;
+
+  update user_reputation
+  set 
+    trust_points = case 
+      when trust_points + delta > 100 then 100
+      when trust_points + delta < 0 then 0
+      else trust_points + delta
+    end,
+    verified_reports = case when delta > 0 then verified_reports + 1 else verified_reports end,
+    false_reports = case when delta < 0 then false_reports + 1 else false_reports end,
+    updated_at = now()
+  where session_id = sess_id
+  returning trust_points into curr_points;
+
+  return curr_points;
+end;
+$$;
+
+grant select on report_history to anon, authenticated;
+grant select, insert, update on user_reputation to anon, authenticated;

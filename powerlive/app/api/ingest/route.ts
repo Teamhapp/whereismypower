@@ -102,9 +102,28 @@ export async function POST(req: NextRequest) {
       nearbyCount = (nearby as any[])?.filter((r) => r.status === status).length ?? 0
     }
 
+    // 3. Fetch User Trust Score to adjust confidence
+    let trustBoost = 0
+    if (payload.session_id) {
+      try {
+        const { data: rep } = await supabase
+          .from('user_reputation')
+          .select('trust_points')
+          .eq('session_id', payload.session_id)
+          .single()
+        
+        if (rep) {
+          if (rep.trust_points >= 80) trustBoost = 15
+          else if (rep.trust_points <= 30) trustBoost = -20
+        }
+      } catch {
+        // Fallback silently
+      }
+    }
+
     const sourceBoost = SOURCE_WEIGHT[source] ?? 2
     const baseConfidence = calculateConfidence(nearbyCount + 1, 0)
-    const confidence = Math.min(baseConfidence + sourceBoost, 100)
+    const confidence = Math.max(10, Math.min(baseConfidence + sourceBoost + trustBoost, 100))
 
     // AI reason classification: use Claude if raw_text is present and reason not already provided
     let resolvedReason = payload.reason || deriveReason(payload.raw_text)
@@ -149,6 +168,18 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Reward user with reputation boost (+5 trust points) on submission
+    if (payload.session_id) {
+      try {
+        await supabase.rpc('adjust_user_reputation', {
+          sess_id: payload.session_id,
+          delta: 5
+        })
+      } catch {
+        // Fallback silently
+      }
+    }
 
     return NextResponse.json({
       success: true,

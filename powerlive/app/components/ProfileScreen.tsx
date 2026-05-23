@@ -28,12 +28,41 @@ const MENU = [
   { icon: '⚖️', label: 'Privacy Policy',          sublabel: 'How we handle your data'      },
 ]
 
+function getSessionId(): string {
+  if (typeof window === 'undefined') return 'guest'
+  let sid = localStorage.getItem('pl_session')
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now()
+    localStorage.setItem('pl_session', sid)
+  }
+  return sid
+}
+
 export default function ProfileScreen() {
-  const { user, loading, displayName, avatarUrl, signOut, setShowAuthModal } = useAuth()
+  const { user, loading, displayName, avatarUrl, signOut } = useAuth()
   const [notifEnabled, setNotifEnabled] = useState(true)
   const [darkMode, setDarkMode]         = useState(true)
   const [showLocalAuth, setShowLocalAuth] = useState(false)
   const [signingOut, setSigningOut]     = useState(false)
+
+  const [reputation, setReputation] = useState({
+    trust_points: 50,
+    verified_reports: 0,
+    badge: 'Active Contributor'
+  })
+
+  useState(() => {
+    if (typeof window === 'undefined') return
+    const sid = getSessionId()
+    fetch(`/api/reports/history?session_id=${sid}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.reputation) {
+          setReputation(data.reputation)
+        }
+      })
+      .catch(() => {})
+  })
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -95,9 +124,14 @@ export default function ProfileScreen() {
               <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user.email ?? 'Google account'}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 11, color: 'var(--restored)', fontWeight: 600 }}>● Synced</span>
-                <span style={{ fontSize: 11, color: 'var(--text3)' }}>· 12 reports</span>
+                <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700 }}>
+                  · 🛡️ {reputation.trust_points}/100 pts ({reputation.badge})
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>
+                  · {reputation.verified_reports} verified
+                </span>
               </div>
             </div>
 
@@ -130,7 +164,9 @@ export default function ProfileScreen() {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Guest User</p>
-                <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>Data stored locally only</p>
+                <p style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600, marginTop: 2 }}>
+                  🛡️ {reputation.trust_points}/100 pts ({reputation.badge})
+                </p>
               </div>
             </div>
 

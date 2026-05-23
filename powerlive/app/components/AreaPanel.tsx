@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { type Area, STATUS_COLOR, STATUS_LABEL, STATUS_ICON } from '@/app/data/areas'
+import { type Area, type AreaStatus, type AreaUpdate, STATUS_COLOR, STATUS_LABEL, STATUS_ICON } from '@/app/data/areas'
 import { getCircleById, getZoneByCircleId, TANGEDCO_HELPLINE } from '@/app/data/tneb-zones'
 
 interface ETAResult {
@@ -29,6 +29,7 @@ function fmtMins(m: number) {
 
 export default function AreaPanel({ area, followed, onFollow, onClose, onReport }: Props) {
   const [tab, setTab] = useState<Tab>('overview')
+  const [streetFilter, setStreetFilter] = useState<string>('')
   const color = STATUS_COLOR[area.status]
 
   // Live ETA fetch (only for active outages)
@@ -251,26 +252,41 @@ export default function AreaPanel({ area, followed, onFollow, onClose, onReport 
         {/* ── REPORTS ── */}
         {tab === 'reports' && (
           <div>
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="text"
+                placeholder="🔍 Filter by street name (e.g. 100 Feet Rd)"
+                value={streetFilter}
+                onChange={(e) => setStreetFilter(e.target.value)}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: 10,
+                  border: '1px solid var(--border)', background: 'var(--bg3)',
+                  color: 'var(--text)', fontSize: 13, boxSizing: 'border-box'
+                }}
+              />
+            </div>
             <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14 }}>
-              {area.reportCount} community reports · most recent first
+              {area.updates.filter((u: AreaUpdate) => !streetFilter || u.message.toLowerCase().includes(streetFilter.toLowerCase())).length} reports found · most recent first
             </p>
-            {area.updates.map((u, i) => (
-              <div key={i} className="feed-item">
-                <div className="feed-avatar">
-                  {u.user.charAt(0)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.user}</span>
-                    <span className={`chip chip-${u.status}`} style={{ fontSize: 10 }}>
-                      {STATUS_ICON[u.status]}
-                    </span>
+            {area.updates
+              .filter((u: AreaUpdate) => !streetFilter || u.message.toLowerCase().includes(streetFilter.toLowerCase()))
+              .map((u: AreaUpdate, i: number) => (
+                <div key={i} className="feed-item">
+                  <div className="feed-avatar">
+                    {u.user.charAt(0)}
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>{u.message}</p>
-                  <p className="feed-meta">{u.time}</p>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{u.user}</span>
+                      <span className={`chip chip-${u.status}`} style={{ fontSize: 10 }}>
+                        {STATUS_ICON[u.status]}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>{u.message}</p>
+                    <p className="feed-meta">{u.time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
             <button
               className="btn btn-ghost btn-full"
               style={{ marginTop: 16 }}

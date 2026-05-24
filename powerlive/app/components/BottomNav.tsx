@@ -1,6 +1,6 @@
 'use client'
 
-export type NavTab = 'home' | 'map' | 'report' | 'alerts' | 'profile'
+export type NavTab = 'map' | 'alerts' | 'report' | 'updates' | 'profile'
 
 interface Props {
   active: NavTab
@@ -9,14 +9,7 @@ interface Props {
   onReport: () => void
 }
 
-const SZ = 22 // icon size in px
-
-const HomeIcon = () => (
-  <svg width={SZ} height={SZ} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-)
+const SZ = 22 // Icon size
 
 const MapIcon = () => (
   <svg width={SZ} height={SZ} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -33,17 +26,23 @@ const BellIcon = () => (
   </svg>
 )
 
+const LightningIcon = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M13 2L3 14h9v8l10-12h-9z"/>
+  </svg>
+)
+
+const TrendIcon = () => (
+  <svg width={SZ} height={SZ} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+    <polyline points="17 6 23 6 23 12"/>
+  </svg>
+)
+
 const UserIcon = () => (
   <svg width={SZ} height={SZ} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
-  </svg>
-)
-
-const PlusIcon = () => (
-  <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth={2.5} strokeLinecap="round">
-    <line x1="12" y1="5" x2="12" y2="19"/>
-    <line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 )
 
@@ -55,30 +54,16 @@ export default function BottomNav({ active, unreadAlerts, onTab, onReport }: Pro
       <div className="nav-brand">
         <span className="nav-brand-icon">⚡</span>
         <div className="nav-brand-text">
-          <h2>Where is My Power?</h2>
-          <p>Tamil Nadu · Live</p>
+          <h2>PowerLive</h2>
+          <p>Live Power Status Map</p>
         </div>
       </div>
-
-      {/* Home */}
-      <button className={`nav-btn${active === 'home' ? ' active' : ''}`} onClick={() => onTab('home')}>
-        <HomeIcon />
-        Home
-      </button>
 
       {/* Map */}
       <button className={`nav-btn${active === 'map' ? ' active' : ''}`} onClick={() => onTab('map')}>
         <MapIcon />
         Map
       </button>
-
-      {/* FAB — Report */}
-      <div className="nav-fab-wrap">
-        <button className="nav-fab" onClick={onReport} aria-label="Report power status">
-          <PlusIcon />
-        </button>
-        <span className="nav-fab-label">Report</span>
-      </div>
 
       {/* Alerts */}
       <button
@@ -91,17 +76,45 @@ export default function BottomNav({ active, unreadAlerts, onTab, onReport }: Pro
           {unreadAlerts > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -6,
-              background: 'var(--primary)', color: '#000',
+              background: '#ef4444', color: '#fff',
               width: 15, height: 15, borderRadius: '50%',
-              fontSize: 8, fontWeight: 800,
+              fontSize: 9, fontWeight: 800,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               lineHeight: 1,
+              border: '1.5px solid #13131f'
             }}>
-              {unreadAlerts > 9 ? '9+' : unreadAlerts}
+              {unreadAlerts}
             </span>
           )}
         </div>
         Alerts
+      </button>
+
+      {/* Report FAB in the Center */}
+      <div className="nav-fab-wrap">
+        <button
+          className="nav-fab"
+          onClick={onReport}
+          aria-label="Report power status"
+          style={{
+            background: 'var(--card2)',
+            border: '2px solid var(--primary)',
+            boxShadow: '0 4px 18px rgba(245,158,11,.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--primary)'
+          }}
+        >
+          <LightningIcon />
+        </button>
+        <span className="nav-fab-label" style={{ color: active === 'report' ? 'var(--primary)' : 'var(--text3)' }}>Report</span>
+      </div>
+
+      {/* Updates (Grid Statistics) */}
+      <button className={`nav-btn${active === 'updates' ? ' active' : ''}`} onClick={() => onTab('updates')}>
+        <TrendIcon />
+        Updates
       </button>
 
       {/* Profile */}

@@ -86,38 +86,85 @@ export default function HomeScreen({ onAreaSelect, onScheduledSelect, onReport }
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0,
         padding: '14px 16px 0',
-        background: 'linear-gradient(to bottom, rgba(13,13,20,.95) 60%, transparent)',
+        background: 'linear-gradient(to bottom, rgba(13,13,20,.95) 75%, transparent)',
         zIndex: 800,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 22 }}>⚡</span>
-            <div>
-              <h1 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>Where is My Power?</h1>
-              <p style={{ fontSize: 11, color: 'var(--text3)' }}>Tamil Nadu · Live</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          {/* Logo Brand Block */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10,
+              background: 'var(--primary)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, color: '#000', fontWeight: 'bold',
+              boxShadow: '0 2px 10px rgba(245,158,11,.4)'
+            }}>
+              ⚡
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>Power<span style={{ color: 'var(--primary)' }}>Live</span></h2>
+              <p style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 700, whiteSpace: 'nowrap' }}>Live Power Status Map</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {outageCount > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: 'rgba(239,68,68,.18)', borderRadius: 10, padding: '5px 10px',
-                border: '1px solid rgba(239,68,68,.25)',
+
+          {/* Search Input Box */}
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search area, street or locality"
+              style={{
+                width: '100%',
+                padding: '10px 14px 10px 38px',
+                background: 'rgba(19, 19, 31, 0.85)',
+                border: '1.2px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 14,
+                color: '#fff',
+                fontSize: 13,
+                outline: 'none',
+                boxSizing: 'border-box',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+              }}
+            />
+            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
+            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', fontSize: 15, cursor: 'pointer' }}>🎯</span>
+          </div>
+
+          {/* Actions: Notifications & Hamburger */}
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {/* Notification bell button with red badge '3' */}
+            <button style={{
+              width: 38, height: 38, borderRadius: 12,
+              background: 'rgba(19, 19, 31, 0.85)', border: '1.2px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 16, cursor: 'pointer', position: 'relative',
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}>
+              🔔
+              <span style={{
+                position: 'absolute', top: -3, right: -3,
+                width: 15, height: 15, borderRadius: '50%',
+                background: '#ef4444', color: '#fff',
+                fontSize: 9, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid #0d0d14'
               }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 6px #ef4444' }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#fc8181' }}>{outageCount} outages</span>
-              </div>
-            )}
-            {activeScheduled > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: 'rgba(59,130,246,.18)', borderRadius: 10, padding: '5px 10px',
-                border: '1px solid rgba(59,130,246,.25)',
-              }}>
-                <span style={{ fontSize: 12 }}>📅</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa' }}>{activeScheduled} now</span>
-              </div>
-            )}
+                3
+              </span>
+            </button>
+
+            {/* Hamburger menu button */}
+            <button style={{
+              width: 38, height: 38, borderRadius: 12,
+              background: 'rgba(19, 19, 31, 0.85)', border: '1.2px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 18, cursor: 'pointer',
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}>
+              ☰
+            </button>
           </div>
         </div>
 

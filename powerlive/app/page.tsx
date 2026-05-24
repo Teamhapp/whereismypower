@@ -21,7 +21,7 @@ import ConfirmBanner from '@/app/components/ConfirmBanner'
 export default function Home() {
   const { user, showAuthModal, setShowAuthModal } = useAuth()
 
-  const [tab, setTab]                       = useState<NavTab>('home')
+  const [tab, setTab]                       = useState<NavTab>('map')
   const [showReport, setShowReport]         = useState(false)
   const [reportStatus, setReportStatus]     = useState<'no_power' | 'power_back' | undefined>()
   const [selectedArea, setSelectedArea]     = useState<Area | null>(null)
@@ -111,8 +111,8 @@ export default function Home() {
   return (
     <div style={{ height: '100dvh', width: '100vw', position: 'relative', overflow: 'hidden', background: 'var(--bg)' }}>
 
-      {/* ── Home / Map screen ── */}
-      {(tab === 'home' || tab === 'map') && (
+      {/* ── Map screen ── */}
+      {tab === 'map' && (
         <div style={{ position: 'absolute', top: 0, right: 0, bottom: 'var(--nav-h)', left: 'var(--side-w)' }}>
           <HomeScreen
             onAreaSelect={handleAreaSelect}
@@ -127,12 +127,14 @@ export default function Home() {
         <AlertsScreen />
       )}
 
-      {/* ── Reliability screen ── */}
+      {/* ── Updates screen ── */}
+      {tab === 'updates' && (
+        <ReliabilityScreen />
+      )}
+
+      {/* ── Profile screen ── */}
       {tab === 'profile' && (
-        // Profile tab shows reliability + profile stacked; use a sub-tab approach via profile screen
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 'var(--nav-h)', left: 'var(--side-w)', display: 'flex', flexDirection: 'column' }}>
-          <ProfileAndReliabilityShell />
-        </div>
+        <ProfileScreen />
       )}
 
       {/* ── Side panel: Community area ── */}
@@ -186,8 +188,8 @@ export default function Home() {
         />
       )}
 
-      {/* ── Floating AI chat button (home/map only, above nav) ── */}
-      {(tab === 'home' || tab === 'map') && !showChat && !showReport && !selectedArea && !selectedScheduled && (
+      {/* ── Floating AI chat button (map only, above nav) ── */}
+      {tab === 'map' && !showChat && !showReport && !selectedArea && !selectedScheduled && (
         <button
           onClick={() => setShowChat(true)}
           style={{
